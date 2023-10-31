@@ -1,14 +1,38 @@
 const express = require('express')
-const { SERVER_PORT } = require('./config/index')
+const { SERVER_PORT, MONGO_DB_URL, REACT_APP_URL } = require('./config/index')
 const mongoose = require('mongoose');
+const cors = require("cors")
 const bodyParser = require('body-parser');
-
+const passport = require('passport');
+const passportStrategy = require("./passport");
+const authRoute = require("./routes/auth")
+const cookieSession = require('cookie-session')
 const app = express()
+// const writeRoute = require('./routes/write')
+
+app.use(
+    cookieSession({
+        name: "session",
+        keys: ["uber-clone"],
+        maxAge: 24 * 60 * 60 * 100,
+    })
+);
+
+app.use(passport.initialize());
+app.use(passport.session())
 app.use(bodyParser.json());
+
+app.use(
+    cors({
+        origin: REACT_APP_URL,
+        methods: "GET,POST,PUT,DELETE",
+        credentials: true,
+    })
+);
 
 const port = SERVER_PORT
 
-mongoose.connect('mongodb://127.0.0.1:27017/Uber-Clone-Database', {
+mongoose.connect(MONGO_DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 });
@@ -27,7 +51,7 @@ const markerSchema = new mongoose.Schema({
 const Marker = mongoose.model('Marker', markerSchema);
 
 // Save marker endpoint
-app.post('/markers', async (req, res) => {
+app.post('/markers/post', async (req, res) => {
     const { userId, lat, lng } = req.body;
 
     const marker = new Marker({
@@ -41,18 +65,20 @@ app.post('/markers', async (req, res) => {
 });
 
 // Retrieve markers for a user endpoint
-app.get('/markers/:userId', async (req, res) => {
-    const userId = req.params.userId;
-    const markers = await Marker.find({ userId });
+app.get('/markers/get', async (req, res) => {
+    try {
+        const pointer = await Marker.find({ userId: req.query.userId })
 
-    res.json(markers);
+        res.status(200).json(pointer);
+    } catch (e) {
+        console.log(e)
+        res.status(500).json({error: "Internal Server Error"});
+    }
 });
 
-// app.use(express.static(path.join(__dirname, 'client/public')))
+app.use('/auth', authRoute);
 
-app.get('/', (req, res) => {
-    res.send("<p>Hello World</p>")
-})
+// app.use('/api/location', writeRoute)
 
 app.listen(port, () => {
     console.log(`server is listening on port ${port}`)

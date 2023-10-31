@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Navbar from './navbar';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+
 
 const LandingPage = () => {
 
@@ -10,13 +12,13 @@ const LandingPage = () => {
 
     return (
         <div className='min-h-screen flex items-center justify-center flex-col'>
-            <div className='font-semibold'> Welcome, user!</div>
+            <Typography component="div" fontFamily={'Roboto'} sx={{fontSize: "20px"}}> Welcome, user!</Typography>
             <div className='m-2'>
-                <Link to="/Login">
-                    <button className='bg-black text-white border-red-400 rounded p-2 m-2'>Login</button>
+                <Link to="/Signin">
+                    <Button variant='contained' sx={{ margin: 0.25 }}>Login</Button>
                 </Link>
-                <Link to="/Sign-up">
-                    <button className='bg-black text-white border-red-400 rounded p-2 m-2'>Sign-up</button>
+                <Link to="/Signup">
+                    <Button variant='contained' sx={{ margin: 0.25}}>Sign-up</Button>
                 </Link>
             </div>
         </div>

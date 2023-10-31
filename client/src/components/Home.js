@@ -1,30 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { MAPS_KEY } from '../config/index'
+import { GoogleMap, LoadScript, MarkerF } from "@react-google-maps/api";
+import { MAPS_KEY, REACT_APP_API_URL } from '../config/index'
 import axios from 'axios';
 import Navbar from "./navbar";
 
 
-const Map = ({ userId }) => {
+const Map = (userData) => {
+    const user = userData.user;
+    const userId = user.googleId;
+    const url = `${REACT_APP_API_URL}/markers/get?userId=${userId}`
+
     const [center, setCenter] = useState({ lat: 24.860966, lng: 66.990501 });
     const [markers, setMarkers] = useState([]);
 
+
     useEffect(() => {
-        // Retrieve markers for the user from the database
         const fetchMarkers = async () => {
-            const response = await axios.get(`/markers/${userId}`);
-            setMarkers(response.data);
+            const response = await axios.get(url);
+            const responseMarkers = await response.data;
+
+            setMarkers(responseMarkers);
+            return response;
         };
+        fetchMarkers()
+    }, [url]);
 
-        // // When the markers change, set the center to the last marker
-        // if (markers.length > 0) {
-        //     const lastMarker = markers[markers.length - 1];
-        //     setCenter({ lat: lastMarker.lat, lng: lastMarker.lng });
-        // }
+    // console.log(userId)
 
-
-        fetchMarkers();
-    }, [userId]);
+    const renderMarkers = () => {
+        return markers.map((marker, i) => {
+            return (
+                <MarkerF key={i} position={{ lat: marker.lat, lng: marker.lng }} />
+            );
+        });
+    }
 
     const mapContainerStyle = {
         width: '50%',
@@ -37,14 +46,17 @@ const Map = ({ userId }) => {
             lat: event.latLng.lat(),
             lng: event.latLng.lng(),
         };
+        try {
+            // Save marker to the database
+            await axios.post(`${REACT_APP_API_URL}/markers/post`, newMarker);
 
-        // Save marker to the database
-        await axios.post('/markers', newMarker);
+            // Update markers state without triggering automatic recentering
+            setMarkers((prevMarkers) => [...prevMarkers, newMarker]);
 
-        // Update markers state without triggering automatic recentering
-        setMarkers((prevMarkers) => [...prevMarkers, newMarker]);
-
-        setCenter({ lat: newMarker.lat, lng: newMarker.lng });
+            setCenter({ lat: newMarker.lat, lng: newMarker.lng });
+        } catch (e) {
+            console.log(e)
+        }
     };
 
     const mapOptions = {
@@ -53,11 +65,9 @@ const Map = ({ userId }) => {
         fullscreenControl: false
     };
 
-
-
     return (
         <>
-            <Navbar />
+            <Navbar user={user} />
             <div className="flex justify-center">
                 <LoadScript googleMapsApiKey={MAPS_KEY}>
                     <GoogleMap
@@ -67,12 +77,7 @@ const Map = ({ userId }) => {
                         options={mapOptions}
                         onClick={handleMapClick}
                     >
-                        {markers.map((marker, index) => (
-                            <Marker
-                                key={index}
-                                position={{ lat: marker.lat, lng: marker.lng }}
-                            />
-                        ))}
+                        {renderMarkers()}
 
                     </GoogleMap>
                 </LoadScript>
