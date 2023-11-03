@@ -72,12 +72,16 @@ app.get('/markers/get', async (req, res) => {
         res.status(200).json(pointer);
     } catch (e) {
         console.log(e)
-        res.status(500).json({error: "Internal Server Error"});
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 app.use('/auth', authRoute);
 
+app.get(
+    "/", (req, res) => {
+        res.send("<p>Hello From the auth server</p>")
+    })
 // app.use('/api/location', writeRoute)
 
 app.listen(port, () => {
